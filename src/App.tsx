@@ -26,7 +26,8 @@ function App() {
   const handleCommentSubmit = async () => {
     if (user) {
       try {
-        const response = await fetch("http://localhost:8081/api/comments/post", {
+        //const response = await fetch("http://localhost:8081/api/comments/post", {
+        const response = await fetch("https://hackathon-back-297164197657.us-central1.run.app/api/comments/post", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: user.email, comment: newComment }),
@@ -52,7 +53,8 @@ function App() {
 
   const fetchComments = async (): Promise<Comment[]> => {
     try {
-      const response = await fetch("http://localhost:8081/api/comments/get");
+      //const response = await fetch("http://localhost:8081/api/comments/get");
+      const response = await fetch("https://hackathon-back-297164197657.us-central1.run.app/api/comments/get");
       if (!response.ok) {
         throw new Error("Failed to fetch comments");
       }
