@@ -1,108 +1,119 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { onAuthStateChanged, User, signOut } from "firebase/auth";
+import { auth } from "./firebase";
+import SignUp from "./SignUp";
+import Login from "./Login";
 
-type Post = {
-  id: number;
+type Comment = {
   email: string;
-  content: string;
-  likeCount: number;
+  comment: string;
 };
 
-type Reply = {
-  postId: number;
-  email: string;
-  content: string;
-};
+function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [newComment, setNewComment] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [error, setError] = useState<string | null>(null); // State to hold error message
 
-const App: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [replies, setReplies] = useState<{ [postId: number]: Reply[] }>({});
-  const [newPost, setNewPost] = useState("");
-  const [replyContent, setReplyContent] = useState<{ [postId: number]: string }>({});
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
 
-  const user = { email: "test@example.com" }; // 仮のユーザー情報
+    return () => unsubscribe();
+  }, []);
 
-  // 投稿取得
-  const fetchPosts = async () => {
-    const res = await fetch("/api/posts/get");
-    const data: Post[] = await res.json();
-    setPosts(data);
+  const handleCommentSubmit = async () => {
+    if (user) {
+      try {
+        //const response = await fetch("http://localhost:8081/api/comments/post", {
+        const response = await fetch("https://hackathon-back-297164197657.us-central1.run.app/api/comments/post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email, comment: newComment }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to post comment");
+        }
+
+        const newComments = await fetchComments();
+        setComments(newComments);
+        setNewComment("");
+      } catch (err) {
+        // Cast the error to an Error object to access the message
+        if (err instanceof Error) {
+          setError(err.message); // Set error message if an error occurs
+        } else {
+          setError("An unknown error occurred");
+        }
+      }
+    }
   };
 
-  // リプライ取得
-  const fetchReplies = async (postId: number) => {
-    const res = await fetch(`/api/replies/get?postId=${postId}`);
-    const data: Reply[] = await res.json();
-    setReplies((prev) => ({ ...prev, [postId]: data }));
+  const fetchComments = async (): Promise<Comment[]> => {
+    try {
+      //const response = await fetch("http://localhost:8081/api/comments/get");
+      const response = await fetch("https://hackathon-back-297164197657.us-central1.run.app/api/comments/get");
+      if (!response.ok) {
+        throw new Error("Failed to fetch comments");
+      }
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      // Cast the error to an Error object to access the message
+      if (err instanceof Error) {
+        setError(err.message); // Set error message
+      } else {
+        setError("An unknown error occurred");
+      }
+      return [];
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth); // Sign out the user
+      setUser(null); // Update the state to reflect the logged-out status
+    } catch (err) {
+      setError("Failed to log out");
+    }
   };
 
   useEffect(() => {
-    fetchPosts();
+    fetchComments().then(setComments);
   }, []);
-
-  // 投稿作成
-  const handlePostSubmit = async () => {
-    await fetch("/api/posts/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email, content: newPost }),
-    });
-    setNewPost("");
-    fetchPosts();
-  };
-
-  // リプライ作成
-  const handleReplySubmit = async (postId: number) => {
-    await fetch("/api/replies/add", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId, email: user.email, content: replyContent[postId] }),
-    });
-    setReplyContent((prev) => ({ ...prev, [postId]: "" }));
-    fetchReplies(postId);
-  };
-
-  // いいねトグル
-  const handleLikeToggle = async (postId: number) => {
-    await fetch("/api/likes/toggle", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId, email: user.email }),
-    });
-    fetchPosts();
-  };
 
   return (
     <div>
-      <h1>Social App</h1>
-      <div>
-        <h2>Create a Post</h2>
-        <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} />
-        <button onClick={handlePostSubmit}>Post</button>
-      </div>
-      <hr />
-      <div>
-        <h2>Posts</h2>
-        {posts.map((post) => (
-          <div key={post.id} style={{ marginBottom: "20px", border: "1px solid #ccc", padding: "10px" }}>
-            <p><strong>{post.email}:</strong> {post.content}</p>
-            <p>Likes: {post.likeCount}</p>
-            <button onClick={() => handleLikeToggle(post.id)}>Like/Unlike</button>
-            <div>
-              <h4>Replies</h4>
-              {replies[post.id]?.map((reply) => (
-                <p key={reply.content}><strong>{reply.email}:</strong> {reply.content}</p>
-              ))}
-              <textarea
-                value={replyContent[post.id] || ""}
-                onChange={(e) => setReplyContent((prev) => ({ ...prev, [post.id]: e.target.value }))}
-              />
-              <button onClick={() => handleReplySubmit(post.id)}>Reply</button>
-            </div>
+      {user ? (
+        <div>
+          <h1>ようこそ、{user?.email}!</h1>
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+          />
+          <button onClick={handleCommentSubmit}>コメントを投稿</button>
+          <button onClick={handleLogout}>ログアウト</button> {/* Logout button */}
+          {error && <p style={{ color: "red" }}>{error}</p>} {/* Display error message */}
+          <div>
+            {comments.map((comment, index) => (
+              <div key={index}>
+                <p>
+                  <strong>{comment.email}</strong>: {comment.comment}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div>
+          <SignUp />
+          <Login />
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default App;
