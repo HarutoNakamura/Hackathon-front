@@ -4,107 +4,143 @@ import { auth } from "./firebase";
 import SignUp from "./SignUp";
 import Login from "./Login";
 
-type Comment = {
-  email: string;
-  comment: string;
-};
+type Comment = { email: string; comment: string };
+type Post = { id: number; email: string; content: string; created_at: string };
+type Reply = { email: string; content: string; created_at: string };
+
+const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [newComment, setNewComment] = useState("");
+  const [newPost, setNewPost] = useState("");
+  const [newReply, setNewReply] = useState("");
+  const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [error, setError] = useState<string | null>(null); // State to hold error message
+  const [replies, setReplies] = useState<Reply[]>([]);
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
+    const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
-  const handleCommentSubmit = async () => {
-    if (user) {
-      try {
-        //const response = await fetch("http://localhost:8081/api/comments/post", {
-        const response = await fetch("https://hackathon-back-297164197657.us-central1.run.app/api/comments/post", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: user.email, comment: newComment }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to post comment");
-        }
-
-        const newComments = await fetchComments();
-        setComments(newComments);
-        setNewComment("");
-      } catch (err) {
-        // Cast the error to an Error object to access the message
-        if (err instanceof Error) {
-          setError(err.message); // Set error message if an error occurs
-        } else {
-          setError("An unknown error occurred");
-        }
-      }
-    }
-  };
-
-  const fetchComments = async (): Promise<Comment[]> => {
-    try {
-      //const response = await fetch("http://localhost:8081/api/comments/get");
-      const response = await fetch("https://hackathon-back-297164197657.us-central1.run.app/api/comments/get");
-      if (!response.ok) {
-        throw new Error("Failed to fetch comments");
-      }
-      const data = await response.json();
-      return data;
-    } catch (err) {
-      // Cast the error to an Error object to access the message
-      if (err instanceof Error) {
-        setError(err.message); // Set error message
-      } else {
-        setError("An unknown error occurred");
-      }
-      return [];
-    }
-  };
+  useEffect(() => {
+    fetchPosts();
+    fetchComments();
+  }, []);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Sign out the user
-      setUser(null); // Update the state to reflect the logged-out status
-    } catch (err) {
-      setError("Failed to log out");
+      await signOut(auth);
+      setUser(null);
+    } catch {
+      setError("ログアウトに失敗しました");
     }
   };
 
-  useEffect(() => {
-    fetchComments().then(setComments);
-  }, []);
+  const fetchPosts = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/posts/get`);
+      if (!response.ok) throw new Error("投稿の取得に失敗しました");
+      const data = await response.json();
+      setPosts(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
+    }
+  };
+
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/comments/get`);
+      if (!response.ok) throw new Error("コメントの取得に失敗しました");
+      const data = await response.json();
+      setComments(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
+    }
+  };
+
+  const fetchReplies = async (postId: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/replies/get?post_id=${postId}`);
+      if (!response.ok) throw new Error("リプライの取得に失敗しました");
+      const data = await response.json();
+      setReplies(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
+    }
+  };
+
+  const handlePostSubmit = async () => {
+    if (!user) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/posts/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, content: newPost }),
+      });
+      setNewPost("");
+      fetchPosts();
+    } catch {
+      setError("投稿の作成に失敗しました");
+    }
+  };
+
+  const handleReplySubmit = async (postId: number) => {
+    if (!user) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/replies/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ post_id: postId, email: user.email, content: newReply }),
+      });
+      setNewReply("");
+      fetchReplies(postId);
+    } catch {
+      setError("リプライの投稿に失敗しました");
+    }
+  };
 
   return (
     <div>
       {user ? (
         <div>
-          <h1>ようこそ、{user?.email}!</h1>
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-          />
-          <button onClick={handleCommentSubmit}>コメントを投稿</button>
-          <button onClick={handleLogout}>ログアウト</button> {/* Logout button */}
-          {error && <p style={{ color: "red" }}>{error}</p>} {/* Display error message */}
-          <div>
-            {comments.map((comment, index) => (
-              <div key={index}>
-                <p>
-                  <strong>{comment.email}</strong>: {comment.comment}
-                </p>
-              </div>
-            ))}
-          </div>
+          <h1>ようこそ、{user.email}!</h1>
+          <button onClick={handleLogout}>ログアウト</button>
+          {error && <p style={{ color: "red" }}>{error}</p>}
+  
+          <h2>新しい投稿</h2>
+          <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} />
+          <button onClick={handlePostSubmit}>投稿</button>
+  
+          <h2>投稿一覧</h2>
+          {(posts ?? []).map((post) => (
+            <div key={post.id}>
+              <p>
+                <strong>{post.email}</strong>: {post.content} ({post.created_at})
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedPostId(post.id);
+                  fetchReplies(post.id);
+                }}
+              >
+                リプライを見る
+              </button>
+              {selectedPostId === post.id && (
+                <div>
+                  {(replies ?? []).map((reply, idx) => (
+                    <p key={idx}>
+                      <strong>{reply.email}</strong>: {reply.content} ({reply.created_at})
+                    </p>
+                  ))}
+                  <textarea value={newReply} onChange={(e) => setNewReply(e.target.value)} />
+                  <button onClick={() => handleReplySubmit(post.id)}>リプライを投稿</button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
         <div>
@@ -113,7 +149,7 @@ function App() {
         </div>
       )}
     </div>
-  );
+  );  
 }
 
 export default App;
