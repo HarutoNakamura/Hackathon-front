@@ -4,7 +4,6 @@ import { auth } from "./firebase";
 import SignUp from "./SignUp";
 import Login from "./Login";
 
-type Comment = { email: string; comment: string };
 type Post = { id: number; email: string; content: string; created_at: string; likes?: number; };
 type Reply = { email: string; content: string; created_at: string };
 
@@ -15,7 +14,6 @@ function App() {
   const [newPost, setNewPost] = useState("");
   const [newReply, setNewReply] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +25,6 @@ function App() {
 
   useEffect(() => {
     fetchPosts();
-    fetchComments();
   }, []);
 
   const handleLogout = async () => {
@@ -46,18 +43,6 @@ function App() {
       setPosts(data);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
-    }
-  };
-  
-
-  const fetchComments = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/comments/get`);
-      if (!response.ok) throw new Error("コメントの取得に失敗しました");
-      const data = await response.json();
-      setComments(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
     }
   };
 
