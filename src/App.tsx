@@ -57,26 +57,23 @@ function App() {
     }
   };
 
-  const handleLike = async (postId:number) => {
+  const handleLike = async (postId: number) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/likes/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user?.email }),
       });
-  
+
       if (response.ok) {
-        // いいね数を再取得
-        fetchPosts();
+        fetchPosts(); // いいねの数を更新
       } else {
-        const errorData = await response.json();
-        console.error("Error liking post:", errorData);
+        console.error("Failed to toggle like");
       }
     } catch (err) {
       console.error("Failed to send like request:", err);
     }
   };
-  
 
   const handlePostSubmit = async () => {
     if (!user) return;
@@ -115,11 +112,11 @@ function App() {
           <h1>ようこそ、{user.email}!</h1>
           <button onClick={handleLogout}>ログアウト</button>
           {error && <p style={{ color: "red" }}>{error}</p>}
-  
+
           <h2>新しい投稿</h2>
           <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} />
           <button onClick={handlePostSubmit}>投稿</button>
-  
+
           <h2>投稿一覧</h2>
           {(posts ?? []).map((post) => (
             <div key={post.id}>
@@ -159,7 +156,7 @@ function App() {
         </div>
       )}
     </div>
-  );  
+  );
 }
 
 export default App;
