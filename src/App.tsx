@@ -5,7 +5,7 @@ import SignUp from "./SignUp";
 import Login from "./Login";
 
 type Comment = { email: string; comment: string };
-type Post = { id: number; email: string; content: string; created_at: string };
+type Post = { id: number; email: string; content: string; created_at: string; likes?: number; };
 type Reply = { email: string; content: string; created_at: string };
 
 const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
@@ -41,14 +41,14 @@ function App() {
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/get`);
-      if (!response.ok) throw new Error("投稿の取得に失敗しました");
+      const response = await fetch("http://localhost:8081/api/posts/get");
       const data = await response.json();
       setPosts(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
+      console.error("Failed to fetch posts:", err);
     }
   };
+  
 
   const fetchComments = async () => {
     try {
@@ -71,6 +71,27 @@ function App() {
       setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
     }
   };
+
+  const handleLike = async (postId:number) => {
+    try {
+      const response = await fetch("http://localhost:8081/api/likes/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ post_id: postId, email: user?.email }),
+      });
+  
+      if (response.ok) {
+        // いいね数を再取得
+        fetchPosts();
+      } else {
+        const errorData = await response.json();
+        console.error("Error liking post:", errorData);
+      }
+    } catch (err) {
+      console.error("Failed to send like request:", err);
+    }
+  };
+  
 
   const handlePostSubmit = async () => {
     if (!user) return;
@@ -119,6 +140,10 @@ function App() {
             <div key={post.id}>
               <p>
                 <strong>{post.email}</strong>: {post.content} ({post.created_at})
+              </p>
+              <p>
+                いいね数: {post.likes ?? 0}
+                <button onClick={() => handleLike(post.id)}>いいね</button>
               </p>
               <button
                 onClick={() => {
