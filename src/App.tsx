@@ -41,7 +41,7 @@ function App() {
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch("http://localhost:8081/api/posts/get");
+      const response = await fetch(`${API_BASE_URL}/api/posts/get`);
       const data = await response.json();
       setPosts(data);
     } catch (err) {
@@ -74,7 +74,7 @@ function App() {
 
   const handleLike = async (postId:number) => {
     try {
-      const response = await fetch("http://localhost:8081/api/likes/add", {
+      const response = await fetch(`${API_BASE_URL}/api/likes/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user?.email }),
