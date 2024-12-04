@@ -8,7 +8,7 @@ type Post = { id: number; email: string; content: string; created_at: string; li
 type Reply = { email: string; content: string; created_at: string };
 
 const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
-//const API_BASE_URL = "https://localhost:8080";
+//const API_BASE_URL = "https://localhost:8081";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -41,7 +41,6 @@ function App() {
   const fetchRelevantPosts = async (topic: string) => {
     const response = await fetch(`${API_BASE_URL}/api/posts/filter`, {
       method: "POST",
-      mode: 'no-cors', // Added 'no-cors' to skip CORS
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         topic,
@@ -49,9 +48,9 @@ function App() {
       }),
     });
 
-    // Since 'no-cors' prevents access to response data, we cannot parse JSON here
     if (response.ok) {
-      console.log("Request was successful, but data is not accessible due to 'no-cors'.");
+      const relevantPostIDs: number[] = await response.json();
+      setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
     } else {
       console.error("Failed to fetch relevant posts");
     }
@@ -59,16 +58,9 @@ function App() {
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/get`, {
-        method: "GET",
-        mode: 'no-cors', // Added 'no-cors' to skip CORS
-      });
-      // Since 'no-cors' prevents access to response data, we cannot parse JSON here
-      if (response.ok) {
-        console.log("Request was successful, but data is not accessible due to 'no-cors'.");
-      } else {
-        console.error("Failed to fetch posts");
-      }
+      const response = await fetch(`${API_BASE_URL}/api/posts/get`);
+      const data = await response.json();
+      setPosts(data);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
     }
@@ -76,12 +68,10 @@ function App() {
 
   const fetchReplies = async (postId: number) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/replies/get?post_id=${postId}`, {
-        method: "GET",
-        mode: 'no-cors', // Added 'no-cors' to skip CORS
-      });
+      const response = await fetch(`${API_BASE_URL}/api/replies/get?post_id=${postId}`);
       if (!response.ok) throw new Error("リプライの取得に失敗しました");
-      // Since 'no-cors' prevents access to response data, we cannot parse JSON here
+      const data = await response.json();
+      setReplies(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "不明なエラーが発生しました");
     }
@@ -91,7 +81,6 @@ function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/likes/add`, {
         method: "POST",
-        mode: 'no-cors', // Added 'no-cors' to skip CORS
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user?.email }),
       });
@@ -111,7 +100,6 @@ function App() {
     try {
       await fetch(`${API_BASE_URL}/api/posts/create`, {
         method: "POST",
-        mode: 'no-cors', // Added 'no-cors' to skip CORS
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email, content: newPost }),
       });
@@ -127,7 +115,6 @@ function App() {
     try {
       await fetch(`${API_BASE_URL}/api/replies/create`, {
         method: "POST",
-        mode: 'no-cors', // Added 'no-cors' to skip CORS
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user.email, content: newReply }),
       });
