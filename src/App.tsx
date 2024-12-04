@@ -8,7 +8,6 @@ type Post = { id: number; email: string; content: string; created_at: string; li
 type Reply = { email: string; content: string; created_at: string };
 
 const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
-//const API_BASE_URL = "https://localhost:8080";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -39,31 +38,41 @@ function App() {
   };
 
   const fetchRelevantPosts = async (topic: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/posts/filter`, {
-      method: "POST",
-      mode: 'no-cors',
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        topic,
-        posts: posts.map((post) => ({ id: post.id, content: post.content })),
-      }),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/posts/filter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          posts: posts.map((post) => ({ id: post.id, content: post.content })),
+        }),
+      });
 
-    if (response.ok) {
-      const relevantPostIDs: number[] = await response.json();
-      setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
-    } else {
-      console.error("Failed to fetch relevant posts");
+      if (response.ok) {
+        const relevantPostIDs: number[] = await response.json();
+        setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
+      } else {
+        console.error("Failed to fetch relevant posts");
+      }
+    } catch (err) {
+      console.error("Error fetching relevant posts:", err);
+      setError("フィルターの適用に失敗しました");
     }
   };
 
   const fetchPosts = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/posts/get`);
-      const data = await response.json();
-      setPosts(data);
+      if (response.ok) {
+        const data = await response.json();
+        setPosts(data);
+      } else {
+        console.error("Failed to fetch posts");
+        setError("投稿の取得に失敗しました");
+      }
     } catch (err) {
-      console.error("Failed to fetch posts:", err);
+      console.error("Error fetching posts:", err);
+      setError("投稿の取得に失敗しました");
     }
   };
 
@@ -82,13 +91,12 @@ function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/likes/add`, {
         method: "POST",
-        mode: 'no-cors',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user?.email }),
       });
 
       if (response.ok) {
-        fetchPosts(); // いいねの数を更新
+        fetchPosts(); // Refresh the posts to update the likes count
       } else {
         console.error("Failed to toggle like");
       }
@@ -100,14 +108,18 @@ function App() {
   const handlePostSubmit = async () => {
     if (!user) return;
     try {
-      await fetch(`${API_BASE_URL}/api/posts/create`, {
+      const response = await fetch(`${API_BASE_URL}/api/posts/create`, {
         method: "POST",
-        mode: 'no-cors',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email, content: newPost }),
       });
-      setNewPost("");
-      fetchPosts();
+      if (response.ok) {
+        setNewPost("");
+        fetchPosts();
+      } else {
+        console.error("Failed to create post");
+        setError("投稿の作成に失敗しました");
+      }
     } catch {
       setError("投稿の作成に失敗しました");
     }
@@ -116,14 +128,18 @@ function App() {
   const handleReplySubmit = async (postId: number) => {
     if (!user) return;
     try {
-      await fetch(`${API_BASE_URL}/api/replies/create`, {
+      const response = await fetch(`${API_BASE_URL}/api/replies/create`, {
         method: "POST",
-        mode: 'no-cors',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user.email, content: newReply }),
       });
-      setNewReply("");
-      fetchReplies(postId);
+      if (response.ok) {
+        setNewReply("");
+        fetchReplies(postId);
+      } else {
+        console.error("Failed to create reply");
+        setError("リプライの投稿に失敗しました");
+      }
     } catch {
       setError("リプライの投稿に失敗しました");
     }
