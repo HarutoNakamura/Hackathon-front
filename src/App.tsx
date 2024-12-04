@@ -7,7 +7,8 @@ import Login from "./Login";
 type Post = { id: number; email: string; content: string; created_at: string; likes?: number; };
 type Reply = { email: string; content: string; created_at: string };
 
-const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
+//const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
+const API_BASE_URL = "https://localhost:8081";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -15,6 +16,7 @@ function App() {
   const [newReply, setNewReply] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
+  const [filterTopic, setFilterTopic] = useState("");
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +35,24 @@ function App() {
       setUser(null);
     } catch {
       setError("ログアウトに失敗しました");
+    }
+  };
+
+  const fetchRelevantPosts = async (topic: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/posts/filter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic,
+        posts: posts.map((post) => ({ id: post.id, content: post.content })),
+      }),
+    });
+
+    if (response.ok) {
+      const relevantPostIDs: number[] = await response.json();
+      setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
+    } else {
+      console.error("Failed to fetch relevant posts");
     }
   };
 
@@ -116,6 +136,17 @@ function App() {
           <h2>新しい投稿</h2>
           <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} />
           <button onClick={handlePostSubmit}>投稿</button>
+
+          <div>
+            <h2>トピックでフィルター</h2>
+            <input
+              type="text"
+              value={filterTopic}
+              onChange={(e) => setFilterTopic(e.target.value)}
+              placeholder="トピックを入力してください"
+            />
+            <button onClick={() => fetchRelevantPosts(filterTopic)}>フィルター</button>
+          </div>
 
           <h2>投稿一覧</h2>
           {(posts ?? []).map((post) => (
