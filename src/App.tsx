@@ -41,6 +41,7 @@ function App() {
   const fetchRelevantPosts = async (topic: string) => {
     const response = await fetch(`${API_BASE_URL}/api/posts/filter`, {
       method: "POST",
+      mode: 'no-cors',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         topic,
@@ -81,6 +82,7 @@ function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/likes/add`, {
         method: "POST",
+        mode: 'no-cors',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user?.email }),
       });
@@ -100,6 +102,7 @@ function App() {
     try {
       await fetch(`${API_BASE_URL}/api/posts/create`, {
         method: "POST",
+        mode: 'no-cors',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email, content: newPost }),
       });
@@ -115,6 +118,7 @@ function App() {
     try {
       await fetch(`${API_BASE_URL}/api/replies/create`, {
         method: "POST",
+        mode: 'no-cors',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ post_id: postId, email: user.email, content: newReply }),
       });
