@@ -19,6 +19,8 @@ function App() {
   const [filterTopic, setFilterTopic] = useState("");
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, setUser);
@@ -39,6 +41,15 @@ function App() {
   };
 
   const fetchRelevantPosts = async (topic: string) => {
+    setError(null)
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/posts/get`);
+      const data = await response.json();
+      setPosts(data);
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
+    }
     const response = await fetch(`${API_BASE_URL}/api/posts/filter`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,23 +61,40 @@ function App() {
 
     if (response.ok) {
       const relevantPostIDs: number[] = await response.json();
-      setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
+      if (relevantPostIDs==null){
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/posts/get`);
+          const data = await response.json();
+          setPosts(data);
+        } catch (err) {
+          console.error("Failed to fetch posts:", err);
+        }
+        setLoading(false);
+        setError("フィルター結果に該当するポストがありません")
+      }else{
+        setLoading(false);
+        setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
+      }
     } else {
+      setLoading(false);
       console.error("Failed to fetch relevant posts");
     }
   };
 
   const fetchPosts = async () => {
+    setError(null)
     try {
       const response = await fetch(`${API_BASE_URL}/api/posts/get`);
       const data = await response.json();
       setPosts(data);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
+      setError("コメント取得失敗")
     }
   };
 
   const fetchReplies = async (postId: number) => {
+    setError(null)
     try {
       const response = await fetch(`${API_BASE_URL}/api/replies/get?post_id=${postId}`);
       if (!response.ok) throw new Error("リプライの取得に失敗しました");
@@ -78,6 +106,7 @@ function App() {
   };
 
   const handleLike = async (postId: number) => {
+    setError(null)
     try {
       const response = await fetch(`${API_BASE_URL}/api/likes/add`, {
         method: "POST",
@@ -96,6 +125,7 @@ function App() {
   };
 
   const handlePostSubmit = async () => {
+    setError(null)
     if (!user) return;
     try {
       await fetch(`${API_BASE_URL}/api/posts/create`, {
@@ -111,6 +141,7 @@ function App() {
   };
 
   const handleReplySubmit = async (postId: number) => {
+    setError(null)
     if (!user) return;
     try {
       await fetch(`${API_BASE_URL}/api/replies/create`, {
@@ -147,6 +178,7 @@ function App() {
             />
             <button onClick={() => fetchRelevantPosts(filterTopic)}>フィルター</button>
           </div>
+          {loading && <p>フィルター処理中... しばらくお待ちください。</p>}
 
           <h2>投稿一覧</h2>
           {(posts ?? []).map((post) => (
