@@ -7,8 +7,8 @@ import Login from "./Login";
 type Post = { id: number; email: string; content: string; created_at: string; likes?: number; };
 type Reply = { email: string; content: string; created_at: string };
 
-//const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
-const API_BASE_URL = "http://localhost:8081";
+const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
+//const API_BASE_URL = "http://localhost:8081";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -58,7 +58,6 @@ function App() {
         posts: posts.map((post) => ({ id: post.id, content: post.content })),
       }),
     });
-
     if (response.ok) {
       const relevantPostIDs: number[] = await response.json();
       if (relevantPostIDs==null){
