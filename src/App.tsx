@@ -3,6 +3,7 @@ import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 import SignUp from "./SignUp";
 import Login from "./Login";
+import './App.css';
 
 type Post = { id: number; email: string; content: string; created_at: string; likes?: number; };
 type Reply = { email: string; content: string; created_at: string };
@@ -155,12 +156,12 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="container">
       {user ? (
         <div>
           <h1>ようこそ、{user.email}!</h1>
           <button onClick={handleLogout}>ログアウト</button>
-          {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && <p className="error">{error}</p>}
 
           <h2>新しい投稿</h2>
           <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} />
@@ -180,28 +181,24 @@ function App() {
 
           <h2>投稿一覧</h2>
           {(posts ?? []).map((post) => (
-            <div key={post.id}>
-              <p>
-                <strong>{post.email}</strong>: {post.content} ({post.created_at})
-              </p>
+            <div className="post" key={post.id}>
+              <p><strong>{post.email}</strong>: {post.content} ({post.created_at})</p>
               <p>
                 いいね数: {post.likes ?? 0}
                 <button onClick={() => handleLike(post.id)}>いいね</button>
               </p>
-              <button
-                onClick={() => {
-                  setSelectedPostId(post.id);
-                  fetchReplies(post.id);
-                }}
-              >
+              <button onClick={() => {
+                setSelectedPostId(post.id);
+                fetchReplies(post.id);
+              }}>
                 リプライを見る
               </button>
               {selectedPostId === post.id && (
                 <div>
                   {(replies ?? []).map((reply, idx) => (
-                    <p key={idx}>
-                      <strong>{reply.email}</strong>: {reply.content} ({reply.created_at})
-                    </p>
+                    <div className="reply" key={idx}>
+                      <p><strong>{reply.email}</strong>: {reply.content} ({reply.created_at})</p>
+                    </div>
                   ))}
                   <textarea value={newReply} onChange={(e) => setNewReply(e.target.value)} />
                   <button onClick={() => handleReplySubmit(post.id)}>リプライを投稿</button>
