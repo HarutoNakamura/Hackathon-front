@@ -176,7 +176,7 @@ function App() {
             />
             <button onClick={() => fetchRelevantPosts(filterTopic)}>フィルター</button>
           </div>
-          {loading && <p>フィルター処理中... しばらくお待ちください。</p>}
+          {loading && <p>フィルター処理中...</p>}
 
           <h2>投稿一覧</h2>
           {(posts ?? []).map((post) => (
