@@ -8,7 +8,6 @@ type Post = { id: number; email: string; content: string; created_at: string; li
 type Reply = { email: string; content: string; created_at: string };
 
 const API_BASE_URL = "https://hackathon-back-297164197657.us-central1.run.app";
-//const API_BASE_URL = "http://localhost:8081";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -60,7 +59,7 @@ function App() {
     });
     if (response.ok) {
       const relevantPostIDs: number[] = await response.json();
-      if (relevantPostIDs==null){
+      if (relevantPostIDs == null) {
         try {
           const response = await fetch(`${API_BASE_URL}/api/posts/get`);
           const data = await response.json();
@@ -70,7 +69,7 @@ function App() {
         }
         setLoading(false);
         setError("フィルター結果に該当するポストがありません")
-      }else{
+      } else {
         setLoading(false);
         setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
       }
@@ -114,7 +113,7 @@ function App() {
       });
 
       if (response.ok) {
-        fetchPosts(); // いいねの数を更新
+        fetchPosts();
       } else {
         console.error("Failed to toggle like");
       }
