@@ -123,6 +123,7 @@ function App() {
   };
 
   const fetchPosts = async () => {
+    console.log("fetchPosts")
     setError(null)
     try {
       const response = await fetch(`${API_BASE_URL}/api/posts/get`);
