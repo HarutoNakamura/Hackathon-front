@@ -41,7 +41,8 @@ function App() {
   };
 
   const fetchRelevantPosts = async (topic: string) => {
-    setError(null)
+    setError(null);
+    if (topic==="")return;
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/posts/get`);
@@ -81,7 +82,8 @@ function App() {
   };
 
   const fetchnotRelevantPosts = async (topic: string) => {
-    setError(null)
+    setError(null);
+    if (topic=="")return;
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/posts/get`);
@@ -166,6 +168,7 @@ function App() {
   const handlePostSubmit = async () => {
     setError(null)
     if (!user) return;
+    if (newPost=="")return;
     try {
       await fetch(`${API_BASE_URL}/api/posts/create`, {
         method: "POST",
