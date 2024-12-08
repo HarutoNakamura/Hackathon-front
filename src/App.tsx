@@ -80,6 +80,46 @@ function App() {
     }
   };
 
+  const fetchnotRelevantPosts = async (topic: string) => {
+    setError(null)
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/posts/get`);
+      const data = await response.json();
+      setPosts(data);
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
+    }
+    const response = await fetch(`${API_BASE_URL}/api/posts/filter2`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic,
+        posts: posts.map((post) => ({ id: post.id, content: post.content })),
+      }),
+    });
+    if (response.ok) {
+      const relevantPostIDs: number[] = await response.json();
+      if (relevantPostIDs == null) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/posts/get`);
+          const data = await response.json();
+          setPosts(data);
+        } catch (err) {
+          console.error("Failed to fetch posts:", err);
+        }
+        setLoading(false);
+        setError("フィルター結果に該当するポストがありません")
+      } else {
+        setLoading(false);
+        setPosts(posts.filter((post) => relevantPostIDs.includes(post.id)));
+      }
+    } else {
+      setLoading(false);
+      console.error("Failed to fetch relevant posts");
+    }
+  };
+
   const fetchPosts = async () => {
     setError(null)
     try {
@@ -175,7 +215,8 @@ function App() {
               onChange={(e) => setFilterTopic(e.target.value)}
               placeholder="トピックを入力してください"
             />
-            <button onClick={() => fetchRelevantPosts(filterTopic)}>フィルター</button>
+            <button onClick={() => fetchRelevantPosts(filterTopic)}>トピック抽出</button>
+            <button onClick={() => fetchnotRelevantPosts(filterTopic)}>トピック除外</button>
           </div>
           {loading && <p>フィルター処理中...</p>}
 
